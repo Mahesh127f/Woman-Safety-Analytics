@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Women Safety Analytics</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@600;700&display=swap');
+
+  :root {
+    --red:      #c0392b;
+    --red-light:#fde8e6;
+    --red-dark: #96281b;
+    --navy:     #0f1b2d;
+    --navy2:    #1a2a3f;
+    --teal:     #1abc9c;
+    --amber:    #e67e22;
+    --green:    #27ae60;
+    --purple:   #8e44ad;
+    --bg:       #f0f2f5;
+    --card:     #ffffff;
+    --text:     #1a1a2e;
+    --muted:    #6b7280;
+    --border:   #e5e7eb;
+    --success:  #d1fae5;
+    --success-t:#065f46;
+    --warn:     #fef3c7;
+    --warn-t:   #92400e;
+    --danger:   #fee2e2;
+    --danger-t: #991b1b;
+    --info:     #dbeafe;
+    --info-t:   #1e40af;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── TOP NAV ── */
+  .topnav {
+    background: var(--navy);
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0,0,0,.3);
+  }
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .nav-brand .shield {
+    width: 32px; height: 32px;
+    background: var(--red);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .nav-tabs {
+    display: flex;
+    gap: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+  .nav-tab {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: rgba(255,255,255,.65);
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    white-space: nowrap;
+    transition: all .18s;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .nav-tab:hover { color: #fff; background: rgba(255,255,255,.08); }
+  .nav-tab.active { color: #fff; background: var(--red); }
+  .nav-right {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sos-nav-btn {
+    background: var(--red);
+    color: #fff;
+    border: none;
+    padding: 7px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    animation: sosPulse 2s infinite;
+    letter-spacing: .5px;
+  }
+  @keyframes sosPulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(192,57,43,.5); }
+    50%      { box-shadow: 0 0 0 8px rgba(192,57,43,0); }
+  }
+  .user-dot {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--teal);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; color: #fff;
+    cursor: pointer;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; padding: 20px 24px; max-width: 1100px; margin: 0 auto; }
+  .screen.active { display: block; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--card);
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    padding: 18px 20px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title .icon {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; margin-right: 8px;
+  }
+  .card-title-left { display: flex; align-items: center; }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .3px;
+  }
+  .badge-success { background: var(--success); color: var(--success-t); }
+  .badge-warn    { background: var(--warn);    color: var(--warn-t); }
+  .badge-danger  { background: var(--danger);  color: var(--danger-t); }
+  .badge-info    { background: var(--info);    color: var(--info-t); }
+  .badge-muted   { background: #f3f4f6;        color: var(--muted); }
+
+  /* ── GRID ── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
+
+  /* ── STAT CARDS ── */
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .stat-card.red::before   { background: var(--red); }
+  .stat-card.teal::before  { background: var(--teal); }
+  .stat-card.amber::before { background: var(--amber); }
+  .stat-card.green::before { background: var(--green); }
+  .stat-val  { font-size: 26px; font-weight: 700; margin-bottom: 2px; }
+  .stat-label { font-size: 12px; color: var(--muted); }
+  .stat-sub  { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all .18s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-red    { background: var(--red);   color: #fff; }
+  .btn-red:hover { background: var(--red-dark); }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-outline:hover { background: var(--bg); }
+  .btn-green  { background: var(--green); color: #fff; }
+  .btn-teal   { background: var(--teal);  color: #fff; }
+  .btn-full   { width: 100%; justify-content: center; }
+
+  /* ── INPUTS ── */
+  input[type=text], input[type=tel], textarea, select {
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: #f9fafb;
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: border .18s;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--red);
+    background: #fff;
+  }
+  textarea { resize: none; min-height: 80px; }
+  label { font-size: 12px; font-weight: 500; color: var(--muted); display: block; margin-bottom: 5px; }
+  .form-group { margin-bottom: 12px; }
+
+  /* ── DIVIDER ── */
+  hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+  /* ═══════════════════════════════════════════
+     SCREEN 1 — DASHBOARD
+  ═══════════════════════════════════════════ */
+  .threat-banner {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+    border-radius: 16px;
+    padding: 20px 24px;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .threat-left h2 { font-family: 'Poppins',sans-serif; font-size: 20px; font-weight: 700; }
+  .threat-left p  { font-size: 12px; opacity: .7; margin-top: 4px; }
+  .threat-meter {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+  }
+  .threat-level-val {
+    font-family: 'Poppins',sans-serif;
+    font-size: 15px; font-weight: 700;
+    padding: 6px 16px;
+    border-radius: 20px;
+    background: var(--amber);
+    color: #fff;
+  }
+
+  /* ── INCIDENT LIST ── */
+  .incident-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background .15s;
+    border-radius: 8px;
+  }
+  .incident-item:last-child { border-bottom: none; }
+  .incident-item:hover { background: #f9fafb; padding-left: 6px; }
+  .inc-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .inc-info { flex: 1; }
+  .inc-type  { font-size: 13px; font-weight: 500; }
+  .inc-loc   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .inc-time  { font-size: 11px; color: var(--muted); }
+  .sev-dot   { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ═══════════════════════════════════════════
+     SCREEN 2 — CAMERA
+  ═══════════════════════════════════════════ */
+  .cam-wrapper {
+    position: relative;
+    background: #111;
+    border-radius: 14px;
+    overflow: hidden;
+    aspect-ratio: 4/3;
+    max-height: 380px;
+  }
+  #videoEl {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  #canvasEl { display: none; }
+  .cam-overlay {
+    position: absolute;
+    top: 10px; left: 10px; right: 10px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+  }
+  .cam-status {
+    background: rgba(0,0,0,.65);
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 11px; color: #fff;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .live-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: #c0392b;
+    animation: blink 1s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+  .cam-placeholder {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #aaa; gap: 10px; font-size: 13px;
+  }
+  .cam-placeholder .big-icon { font-size: 52px; }
+  .detection-result {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 10px;
+  }
+  .det-card {
+    background: var(--bg);
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+  }
+  .det-val   { font-size: 24px; font-weight: 700; }
+  .det-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ═══════════════════════════════════════════
+     SCREEN 3 — MAP
+  ═══════════════════════════════════════════ */
+  #map {
+    height: 380px;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  /* ═══════════════════════════════════════════
+     SCREEN 4 — SOS
+  ═══════════════════════════════════════════ */
+  .sos-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 24px 0;
+  }
+  .sos-btn-big {
+    width: 150px; height: 150px;
+    border-radius: 50%;
+    background: var(--red);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    position: relative;
+    transition: transform .15s;
+    box-shadow: 0 4px 24px rgba(192,57,43,.4);
+    animation: sosPulse 2s infinite;
+  }
+  .sos-btn-big .sos-icon { font-size: 42px; margin-bottom: 4px; }
+  .sos-btn-big:hover { transform: scale(1.06); }
+  .sos-btn-big:active { transform: scale(.96); }
+  .sos-ring {
+    position: absolute; inset: -14px;
+    border-radius: 50%;
+    border: 2px solid rgba(192,57,43,.3);
+  }
+  .sos-ring2 {
+    position: absolute; inset: -28px;
+    border-radius: 50%;
+    border: 1px solid rgba(192,57,43,.15);
+  }
+  .contact-card {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px;
+    background: var(--bg);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+  .avatar {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 600;
+    flex-shrink: 0;
+  }
+  .av-red  { background: var(--danger);  color: var(--danger-t); }
+  .av-blue { background: var(--info);    color: var(--info-t); }
+  .av-teal { background: var(--success); color: var(--success-t); }
+
+  /* ═══════════════════════════════════════════
+     SCREEN 5 — HEATMAP
+  ═══════════════════════════════════════════ */
+  #heatmap { height: 380px; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); margin-bottom: 16px; }
+
+  /* ═══════════════════════════════════════════
+     SCREEN 6 — SAFE ROUTE
+  ═══════════════════════════════════════════ */
+  #routemap { height: 320px; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); margin-bottom: 16px; }
+  .route-option {
+    border-left: 4px solid;
+    border-radius: 0 10px 10px 0;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    background: var(--bg);
+  }
+  .route-option.safe   { border-color: var(--green); }
+  .route-option.caution { border-color: var(--amber); }
+  .route-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .route-name { font-size: 13px; font-weight: 600; }
+  .route-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .route-tag { font-size: 11px; background: #fff; border: 1px solid var(--border); border-radius: 5px; padding: 2px 8px; color: var(--muted); }
+  .safety-score-bar { height: 6px; background: var(--border); border-radius: 3px; margin-top: 8px; overflow: hidden; }
+  .safety-score-fill { height: 100%; border-radius: 3px; }
+
+  /* ═══════════════════════════════════════════
+     SCREEN 7 — ANALYTICS
+  ═══════════════════════════════════════════ */
+  .chart-container { height: 200px; position: relative; }
+  .bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 160px; padding-bottom: 20px; }
+  .bar-wrap  { flex: 1; display: flex; align-items: flex-end; flex-direction: column; gap: 2px; }
+  .bar       { width: 100%; border-radius: 4px 4px 0 0; transition: opacity .2s; cursor: pointer; min-height: 3px; }
+  .bar:hover { opacity: .75; }
+  .bar-lbl   { font-size: 9px; color: var(--muted); text-align: center; width: 100%; }
+  .progress-row { margin-bottom: 10px; }
+  .prog-header  { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+  .prog-bar     { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .prog-fill    { height: 100%; border-radius: 4px; }
+
+  /* ═══════════════════════════════════════════
+     SCREEN 8 — EMOTION
+  ═══════════════════════════════════════════ */
+  .emotion-display {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px; padding: 16px 0;
+  }
+  .emotion-face { font-size: 64px; line-height: 1; }
+  .emotion-name { font-size: 20px; font-weight: 700; }
+  .emotion-bars { width: 100%; }
+
+  /* ═══════════════════════════════════════════
+     SCREEN 9 — COMMUNITY
+  ═══════════════════════════════════════════ */
+  .feed-post {
+    display: flex; gap: 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .feed-post:last-child { border-bottom: none; }
+  .feed-avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: var(--info);
+    color: var(--info-t);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600;
+    flex-shrink: 0;
+  }
+  .feed-content { flex: 1; }
+  .feed-text  { font-size: 13px; line-height: 1.5; }
+  .feed-meta  { font-size: 11px; color: var(--muted); margin-top: 4px; display: flex; align-items: center; gap: 6px; }
+
+  /* ═══════════════════════════════════════════
+     SCREEN 10 — REPORT
+  ═══════════════════════════════════════════ */
+  .type-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .chip {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    cursor: pointer;
+    transition: all .18s;
+  }
+  .chip.selected { background: var(--red); color: #fff; border-color: var(--red); }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--navy);
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 9999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all .3s;
+    max-width: 300px;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.success { border-left: 4px solid var(--green); }
+  #toast.error   { border-left: 4px solid var(--red); }
+
+  /* ── MODAL ── */
+  .modal-bg {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.5);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 2000;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .modal-bg.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: #fff; border-radius: 16px;
+    padding: 28px; max-width: 400px; width: 90%;
+    text-align: center;
+    transform: scale(.9); transition: transform .2s;
+  }
+  .modal-bg.open .modal { transform: scale(1); }
+  .modal-icon { font-size: 52px; margin-bottom: 12px; }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .modal-sub   { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 18px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 640px) {
+    .grid2, .grid3, .grid4 { grid-template-columns: 1fr 1fr; }
+    .screen { padding: 14px 14px; }
+    .threat-banner { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .topnav { padding: 0 12px; }
+  }
+  @media (max-width: 400px) {
+    .grid4 { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ─── TOP NAV ─────────────────────────────── -->
+<nav class="topnav">
+  <div class="nav-brand">
+    <div class="shield">🛡️</div>
+    SafeHer
+  </div>
+  <div class="nav-tabs" id="navTabs">
+    <button class="nav-tab active" onclick="switchTab('dashboard',this)">📊 Dashboard</button>
+    <button class="nav-tab" onclick="switchTab('camera',this)">📷 Camera</button>
+    <button class="nav-tab" onclick="switchTab('map',this)">🗺️ Map</button>
+    <button class="nav-tab" onclick="switchTab('sos',this)">🚨 SOS</button>
+    <button class="nav-tab" onclick="switchTab('heatmap',this)">🔥 Heatmap</button>
+    <button class="nav-tab" onclick="switchTab('route',this)">🧭 Safe Route</button>
+    <button class="nav-tab" onclick="switchTab('analytics',this)">📈 Analytics</button>
+    <button class="nav-tab" onclick="switchTab('emotion',this)">💡 Emotion AI</button>
+    <button class="nav-tab" onclick="switchTab('community',this)">💬 Community</button>
+    <button class="nav-tab" onclick="switchTab('report',this)">📋 Report</button>
+  </div>
+  <div class="nav-right">
+    <button class="sos-nav-btn" onclick="switchTab('sos',null)">🚨 SOS</button>
+    <div class="user-dot">YJ</div>
+  </div>
+</nav>
+
+<!-- ─── TOAST ──────────────────────────────── -->
+<div id="toast"></div>
+
+<!-- ─── SOS MODAL ─────────────────────────── -->
+<div class="modal-bg" id="sosModal">
+  <div class="modal">
+    <div class="modal-icon">✅</div>
+    <div class="modal-title">Alert Sent!</div>
+    <div class="modal-sub" id="sosModalText">Your emergency contacts have been notified with your live GPS location.</div>
+    <button class="btn btn-red" onclick="closeModal()">OK, I'm aware</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN 1 — DASHBOARD
+═══════════════════════════════════════════ -->
+<div class="screen active" id="screen-dashboard">
+
+  <div class="threat-banner">
+    <div class="threat-left">
+      <h2>Women Safety Analytics</h2>
+      <p id="dash-location">📍 Fetching your location...</p>
+    </div>
+    <div class="threat-meter">
+      <div class="threat-level-val" id="threat-badge">⚠️ MODERATE</div>
+      <div style="font-size:11px;opacity:.6" id="dash-time">—</div>
+    </div>
+  </div>
+
+  <div class="grid4" style="margin-bottom:16px">
+    <div class="stat-card red">
+      <div class="stat-val" style="color:var(--red)" id="d-incidents">24</div>
+      <div class="stat-label">Incidents Today</div>
+      <div class="stat-sub" style="color:var(--red)">↑ 18% vs yesterday</div>
+    </div>
+    <div class="stat-card teal">
+      <div class="stat-val" style="color:var(--teal)">7</div>
+      <div class="stat-label">Safe Routes Active</div>
+      <div class="stat-sub">Across 3 zones</div>
+    </div>
+    <div class="stat-card amber">
+      <div class="stat-val" style="color:var(--amber)" id="d-alerts">142</div>
+      <div class="stat-label">Alerts Sent</div>
+      <div class="stat-sub">↓ 5% this week</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-val" style="color:var(--green)">1,832</div>
+      <div class="stat-label">Users Protected</div>
+      <div class="stat-sub">Active app users</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">
+        <div class="card-title-left"><div class="icon" style="background:#fee2e2">🚨</div>Recent Incidents</div>
+        <span class="badge badge-danger" id="live-dot">● LIVE</span>
+      </div>
+      <div id="incident-feed">
+        <div class="incident-item">
+          <div class="inc-icon" style="background:#fee2e2">😰</div>
+          <div class="inc-info"><div class="inc-type">Harassment reported</div><div class="inc-loc">📍 Karol Bagh Metro, Delhi</div></div>
+          <div style="text-align:right"><div class="inc-time">2 min ago</div><div class="sev-dot" style="background:var(--red);margin-left:auto;margin-top:4px"></div></div>
+        </div>
+        <div class="incident-item">
+          <div class="inc-icon" style="background:#fee2e2">🚨</div>
+          <div class="inc-info"><div class="inc-type">SOS triggered</div><div class="inc-loc">📍 Connaught Place</div></div>
+          <div style="text-align:right"><div class="inc-time">11 min ago</div><div class="sev-dot" style="background:var(--red);margin-left:auto;margin-top:4px"></div></div>
+        </div>
+        <div class="incident-item">
+          <div class="inc-icon" style="background:#fef3c7">⚠️</div>
+          <div class="inc-info"><div class="inc-type">Unsafe lighting flagged</div><div class="inc-loc">📍 Lajpat Nagar Market</div></div>
+          <div style="text-align:right"><div class="inc-time">23 min ago</div><div class="sev-dot" style="background:var(--amber);margin-left:auto;margin-top:4px"></div></div>
+        </div>
+        <div class="incident-item">
+          <div class="inc-icon" style="background:#fef3c7">🚗</div>
+          <div class="inc-info"><div class="inc-type">Suspicious vehicle</div><div class="inc-loc">📍 Dwarka Sector 12</div></div>
+          <div style="text-align:right"><div class="inc-time">41 min ago</div><div class="sev-dot" style="background:var(--amber);margin-left:auto;margin-top:4px"></div></div>
+        </div>
+        <div class="incident-item">
+          <div class="inc-icon" style="background:#d1fae5">✅</div>
+          <div class="inc-info"><div class="inc-type">Safe arrival confirmed</div><div class="inc-loc">📍 Khan Market</div></div>
+          <div style="text-align:right"><div class="inc-time">1 hr ago</div><div class="sev-dot" style="background:var(--green);margin-left:auto;margin-top:4px"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><div class="card-title-left"><div class="icon" style="background:#dbeafe">📊</div>Incidents by Hour</div></div>
+      <div class="bar-chart" id="dashBarChart"></div>
+      <hr>
+      <div class="card-title" style="margin-bottom:10px"><div class="card-title-left"><div class="icon" style="background:#fef3c7">🔥</div>Top Risk Areas</div></div>
+      <div class="progress-row"><div class="prog-header"><span style="font-size:12px">Karol Bagh</span><span style="font-size:12px;font-weight:600;color:var(--red)">88</span></div><div class="prog-bar"><div class="prog-fill" style="width:88%;background:var(--red)"></div></div></div>
+      <div class="progress-row"><div class="prog-header"><span style="font-size:12px">Paharganj</span><span style="font-size:12px;font-weight:600;color:var(--amber)">65</span></div><div class="prog-bar"><div class="prog-fill" style="width:65%;background:var(--amber)"></div></div></div>
+      <div class="progress-row"><div class="prog-header"><span style="font-size:12px">Dwarka Sec 12</span><span style="font-size:12px;font-weight:600;color:var(--amber)">44</span></div><div class="prog-bar"><div class="prog-fill" style="width:44%;background:var(--amber)"></div></div></div>
+      <div class="progress-row"><div class="prog-header"><span style="font-size:12px">Lajpat Nagar</span><span style="font-size:12px;font-weight:600;color:var(--green)">28</span></div><div class="prog-bar"><div class="prog-fill" style="width:28%;background:var(--green)"></div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN 2 — CAMERA / GENDER DETECTION
+═══════════════════════════════════════════ -->
+<div class="screen" id="screen-camera">
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title"><div class="card-title-left"><div class="icon" style="background:#fee2e2">📷</div>Live Webcam Feed</div><span class="badge badge-muted" id="camStatus">Camera Off</span></div>
+      <div class="cam-wrapper">
+        <video id="videoEl" autoplay playsinline muted></video>
+        <canvas id="canvasEl"></canvas>
+        <div class="cam-overlay">
+          <div class="cam-status"><div class="live-dot"></div> DeepFace AI</div>
+          <span class="badge badge-muted" id="detBadge" style="font-size:11px">Idle</span>
+        </div>
+        <div class="cam-placeholder" id="camPlaceholder">
+          <div class="big-icon">📷</div>
+          <div>Click "Start Camera" to begin</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-teal btn-full" id="startCamBtn" onclick="startCamera()">▶ Start Camera</button>
+        <button class="btn btn-outline btn-full" id="stopCamBtn" onclick="stopCamera()" style="display:none">⏹ Stop</button>
+      </div>
+      <button class="btn btn-red btn-full" style="margin-top:8px" id="detectBtn" onclick="detectGender()" disabled>🔍 Detect People</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><div class="card-title-left"><div class="icon" style="background:#dbeafe">📊</div>Detection Results</div></div>
+      <div class="detection-result">
+        <div class="det-card"><div class="det-val" id="det-people" style="color:var(--navy)">—</div><div class="det-label">Total People</div></div>
+        <div class="det-card"><div class="det-val" id="det-male" style="color:var(--red)">—</div><div class="det-label">Male</div></div>
+        <div class="det-card"><div class="det-val" id="det-female" style="color:var(--teal)">—</div><div class="det-label">Female</div></div>
+      </div>
+      <hr>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div><div style="font-size:12px;color:var(--muted)">Threat Level</div><div style="font-size:16px;font-weight:700;margin-top:2px" id="det-threat">—</div></div>
+        <div><div style="font-size:12px;color:var(--muted)">Emotion</div><div style="font-size:16px;font-weight:700;margin-top:2px" id="det-emotion">—</div></div>
+        <div><div style="font-size:12px;color:var(--muted)">Age Est.</div><div style="font-size:16px;font-weight:700;margin-top:2px" id="det-age">—</div></div>
+      </div>
+      <div style="background:var(--bg);border-radius:10px;padding:12px" id="det-status-box">
+        <div style="font-size:12px;color:var(--muted)">Status</div>
+        <div style="font-size:13px;margin-top:4px;line-height:1.5" id="det-status-text">Start the camera and click Detect People to begin analysis.</div>
+      </div>
+      <hr>
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px">People detected</div>
+      <div id="people-list" style="font-size:12px;color:var(--muted)">No data yet.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN 3 — LIVE MAP
+═══════════════════════════════════════════ -->
+<div class="screen" id="screen-map">
+  <div class="card" style="padding:0;overflow:hidden">
+    <div id="map"></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title"><div class="card-title-left"><div class="icon" style="background:#d1fae5">📍</div>Your Location</div></div>
+      <div style="font-family:monospace;font-size:13px;margin-bottom:8px" id="map-coords">Fetching GPS...</div>
+      <button class="btn btn-teal btn-full" onclick="getLocation()">📡 Refresh Location</button>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="card-title-left"><div class="icon" style="background:#fef3c7">⚠️</div>Nearby Zones</div></div>
+      <div style="font-size:13px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span>🔴 Karol Bagh underpass</span><span class="badge badge-danger">High Risk</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><span>🟡 Paharganj market</span><span class="badge badge-warn">Caution</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><span>🟢 Khan Market</span><span class="badge badge-success">Safe Zone</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN 4 — SOS
+═══════════════════════════════════════════ -->
+<div class="screen" id="screen-sos">
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title"><div class="card-title-left"><div class="icon" style="background:#fee2e2">🚨</div>Emergency SOS</div></div>
+      <div class="sos-center">
+        <button class="sos-btn-big" onclick="triggerSOS()">
+          <div class="sos-ring"></div>
+          <div class="sos-ring2"></div>
+          <div class="sos-icon">🚨</div>
+          SOS
+        </button>
+        <div style="font-size:13px;color:var(--muted);text-align:center;max-width:220px">
+          Tap to instantly send your GPS location to all trusted contacts via SMS
+        </div>
+        <div style="width:100%;background:var(--bg);border-radius:10px;padding:12px">
+          <div style="font-size:11px;color:var(--muted);font-weight:600;margin-bottom:6px">SMS PREVIEW (sent via Twilio)</div>
+          <div style="font-family:monospace;font-size:12px;line-height:1.7;color:var(--text)" id="smsPreview">
+            🚨 EMERGENCY ALERT<br>
+            User needs immediate help!<br>
+            📍 Location: fetching...<br>
+            🗺 Maps link: —<br>
+            ⏰ Time: —
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="card-title-left"><div class="icon" style="background:#d1fae5">👥</div>Trusted Contacts</div></div>
+      <div id="contacts-list">
+        <div class="contact-card">
+          <div class="avatar av-red">MA</div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:600">Mom</div><div style="font-size:12px;color:var(--muted)">+91 98765 43210</div></div>
+          <span class="badge badge-success">Active</span>
+        </div>
+        <div class="contact-card">
+          <div class="avatar av-blue">RS</div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:600">Riya Singh</div><div style="font-size:12px;color:var(--muted)">+91 91234 56789</div></div>
+          <span class="badge badge-success">Active</span>
+        </div>
+        <div class="contact-card">
+          <div class="avatar av-teal">PK</div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:600">Priya K.</div><div style="font-size:12px;color:var(--muted)">+91 90000 11223</div></div>
+          <span class="badge badge-success">Active</span>
+        </div>
+      </div>
+      <hr>
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px">Add Contact</div>
+      <div class="form-group"><label>Name</label><input type="text" id="new-contact-name" placeholder="Contact name"/></div>
+      <div class="form-group"><label>Phone Number</label><input type="tel" id="new-contact-phone" placeholder="+91 XXXXX XXXXX"/></div>
+      <button class="btn btn-teal btn-full" onclick="addContact()">+ Add Contact</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN 5 — HEATMAP
+═══════════════════════════════════════════ -->
+<div class="screen" id="screen-heatmap">
+  <div class="card" style="padding:0;overflow:hidden">
+    <div id="heatmap"></div>
+  </div>
+  <div class="grid3">
+    <div class="stat-card red"><div class="stat-val" style="color:var(--red)">88</div><div class="stat-label">🔴 Karol Bagh</div><div class="stat-sub">High Risk</div></div>
+    <div class="stat-card amber"><div class="stat-val" style="color:var(--amber)">65</div><div class="stat-label">🟡 Paharganj</div><div class="stat-sub">Moderate</div></div>
+    <div class="stat-card green"><div class="stat-val" style="color:var(--green)">18</div><div class="stat-label">🟢 Khan Market</div><div class="stat-sub">Low Risk</div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN 6 — SAFE ROUTE
+═══════════════════════════════════════════ -->
+<div class="screen" id="screen-route">
+  <div class="card">
+    <div class="card-title"><div class="card-title-left"><div class="icon" style="background:#d1fae5">🧭</div>Safe Route Planner</div></div>
+    <div class="grid2" style="margin-bottom:12px">
+      <div class="form-group" style="margin:0"><label>From</label><input type="text" id="route-from" placeholder="Your location" value="Karol Bagh Metro"/></div>
+      <div class="form-group" style="margin:0"><label>To</label><input type="text" id="route-to" placeholder="Destination" value="Connaught Place"/></div>
+    </div>
+    <button class="btn btn-red btn-full" onclick="planRoute()">🔍 Find Safest Route</button>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden"><div id="routemap"></div></div>
+  <div id="route-results" style="display:none">
+    <div class="route-option safe">
+      <div class="route-top"><span class="route-name">Via Janpath Road (Recommended)</span><span class="badge badge-success">92/100 Safe</span></div>
+      <div class="route-tags">
+        <span class="route-tag">📷 CCTV covered</span>
+        <span class="route-tag">💡 Well-lit</span>
+        <span class="route-tag">🚶 Busy street</span>
+        <span class="route-tag">⏱ 18 min walk</span>
+      </div>
+      <div class="safety-score-bar"><div class="safety-score-fill" style="width:92%;background:var(--green)"></div></div>
+    </div>
+    <div class="route-option caution">
+      <div class="route-top"><span class="route-name">Via Panchkuian Road</span><span class="badge badge-warn">54/100 Safe</span></div>
+      <div class="route-tags">
+        <span class="route-tag">❌ No CCTV</span>
+        <span class="route-tag">🌑 Dim lighting</span>
+        <span class="route-tag">⏱ 11 min walk</span>
+      </div>
+      <div class="safety-score-bar"><div class="safety-score-fill" style="width:54%;background:var(--amber)"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN 7 — ANALYTICS
+═══════════════════════════════════════════ -->
+<div class="screen" id="screen-analytics">
+  <div class="grid4" style="margin-bottom:16px">
+    <div class="stat-card red"><div class="stat-val" style="color:var(--red)">142</div><div class="stat-label">Total Incidents</div><div class="stat-sub">This month</div></div>
+    <div class="stat-card green"><div class="stat-val" style="color:var(--green)">1,832</div><div class="stat-label">Women Protected</div><div class="stat-sub">Active users</div></div>
+    <div class="stat-card amber"><div class="stat-val" style="color:var(--amber)">38</div><div class="stat-label">SOS Alerts</div><div class="stat-sub">This month</div></div>
+    <div class="stat-card teal"><div class="stat-val" style="color:var(--teal)">94%</div><div class="stat-label">Response Rate</div><div class="stat-sub">Contacts replied</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title"><div class="card-title-left"><div class="icon" style="background:#dbeafe">📊</div>Incidents by Hour</div></div>
+      <div class="bar-chart" id="analyticsBarChart"></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);padding:0 2px">
+        <span>12am</span><span>6am</span><span>12pm</span><span>6pm</span><span>11pm</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="card-title-left"><div class="icon" style="background:#fee2e2">📋</div>Incident Types</div></div>
+      <div class="progress-row"><div class="prog-header"><span style="font-size:12px">Harassment</span><span style="font-size:12px;font-weight:600">42%</span></div><div class="prog-bar"><div class="prog-fill" style="width:42%;background:var(--red)"></div></div></div>
+      <div class="progress-row"><div class="prog-header"><span style="font-size:12px">Unsafe area</span><span style="font-size:12px;font-weight:600">25%</span></div><div class="prog-bar"><div class="prog-fill" style="width:25%;background:var(--amber)"></div></div></div>
+      <div class="progress-row"><div class="prog-header"><span style="font-size:12px">Stalking</span><span style="font-size:12px;font-weight:600">18%</span></div><div class="prog-bar"><div class="prog-fill" style="width:18%;background:var(--purple)"></div></div></div>
+      <div class="progress-row"><div class="prog-header"><span style="font-size:12px">Suspicious vehicle</span><span style="font-size:12px;font-weight:600">10%</span></div><div class="prog-bar"><div class="prog-fill" style="width:10%;background:var(--teal)"></div></div></div>
+      <div class="progress-row"><div class="prog-header"><span style="font-size:12px">Other</span><span style="font-size:12px;font-weight:600">5%</span></div><div class="prog-bar"><div class="prog-fill" style="width:5%;background:var(--muted)"></div></div></div>
+      <hr>
+      <div class="card-title" style="margin-bottom:10px"><div class="card-title-left"><div class="icon" style="background:#d1fae5">🕐</div>Peak Risk Hours</div></div>
+      <div style="font-size:12px;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;justify-content:space-between"><span>🔴 8 PM – 11 PM</span><span class="badge badge-danger">Highest</span></div>
+        <div style="display:flex;justify-content:space-between"><span>🟡 6 AM – 9 AM</span><span class="badge badge-warn">Moderate</span></div>
+        <div style="display:flex;justify-content:space-between"><span>🟢 10 AM – 4 PM</span><span class="badge badge-success">Safest</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN 8 — EMOTION AI
+═══════════════════════════════════════════ -->
+<div class="screen" id="screen-emotion">
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title"><div class="card-title-left"><div class="icon" style="background:#eededfe">💡</div>Emotion Detection</div><span class="badge badge-muted" id="em-cam-status">Camera Off</span></div>
+      <div class="cam-wrapper" style="max-height:280px">
+        <video id="emVideoEl" autoplay playsinline muted></video>
+        <div class="cam-placeholder" id="emCamPlaceholder">
+          <div class="big-icon">😐</div>
+          <div>Start camera to detect emotion</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-teal btn-full" onclick="startEmoCam()">▶ Start Camera</button>
+        <button class="btn btn-outline btn-full" onclick="stopEmoCam()">⏹ Stop</button>
+      </div>
+      <button class="btn btn-red btn-full" style="margin-top:8px" id="emoDetectBtn" onclick="detectEmotion()" disabled>💡 Analyse Emotion</button>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="card-title-left"><div class="icon" style="background:#fef3c7">😮</div>Emotion Result</div></div>
+      <div class="emotion-display">
+        <div class="emotion-face" id="emo-face">😐</div>
+        <div class="emotion-name" id="emo-name">Neutral</div>
+        <span class="badge badge-muted" id="emo-badge">Awaiting scan</span>
+      </div>
+      <hr>
+      <div class="emotion-bars">
+        <div class="progress-row"><div class="prog-header"><span style="font-size:12px">😨 Fear</span><span id="v-fear" style="font-size:12px;font-weight:600">5%</span></div><div class="prog-bar"><div class="prog-fill" id="b-fear" style="width:5%;background:var(--red);transition:width .5s"></div></div></div>
+        <div class="progress-row"><div class="prog-header"><span style="font-size:12px">😐 Neutral</span><span id="v-neut" style="font-size:12px;font-weight:600">80%</span></div><div class="prog-bar"><div class="prog-fill" id="b-neut" style="width:80%;background:#3498db;transition:width .5s"></div></div></div>
+        <div class="progress-row"><div class="prog-header"><span style="font-size:12px">😟 Distress</span><span id="v-dist" style="font-size:12px;font-weight:600">3%</span></div><div class="prog-bar"><div class="prog-fill" id="b-dist" style="width:3%;background:var(--amber);transition:width .5s"></div></div></div>
+        <div class="progress-row"><div class="prog-header"><span style="font-size:12px">😊 Happy</span><span id="v-hap" style="font-size:12px;font-weight:600">12%</span></div><div class="prog-bar"><div class="prog-fill" id="b-hap" style="width:12%;background:var(--green);transition:width .5s"></div></div></div>
+      </div>
+      <div style="margin-top:10px;background:var(--bg);border-radius:8px;padding:10px;font-size:12px;color:var(--muted)" id="emo-advice">
+        💡 Tip: If fear or distress is detected at high levels, the SOS alert will be auto-triggered.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN 9 — COMMUNITY
+═══════════════════════════════════════════ -->
+<div class="screen" id="screen-community">
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title"><div class="card-title-left"><div class="icon" style="background:#dbeafe">✍️</div>Share a Safety Tip</div></div>
+      <div class="form-group"><label>What happened or what should others know?</label><textarea id="post-text" placeholder="E.g. Avoid the underpass near Saket metro after 9 PM..."></textarea></div>
+      <div class="form-group">
+        <label>Tag</label>
+        <select id="post-tag">
+          <option value="Danger">🔴 Danger</option>
+          <option value="Caution">🟡 Caution</option>
+          <option value="Safe" selected>🟢 Safe</option>
+          <option value="Tip">💡 Tip</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Location (optional)</label><input type="text" id="post-loc" placeholder="Area name or landmark"/></div>
+      <button class="btn btn-red btn-full" onclick="postToFeed()">📢 Post to Community</button>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="card-title-left"><div class="icon" style="background:#d1fae5">📰</div>Community Feed</div><span class="badge badge-danger" style="font-size:10px">● LIVE</span></div>
+      <div id="community-feed">
+        <div class="feed-post">
+          <div class="feed-avatar" style="background:var(--danger);color:var(--danger-t)">PK</div>
+          <div class="feed-content">
+            <div class="feed-text">Avoid Saket metro underpass after 9 PM — very poorly lit and no security</div>
+            <div class="feed-meta">Priya K. · 5 min ago <span class="badge badge-danger">Danger</span></div>
+          </div>
+        </div>
+        <div class="feed-post">
+          <div class="feed-avatar" style="background:var(--warn);color:var(--warn-t)">NS</div>
+          <div class="feed-content">
+            <div class="feed-text">Rohini Sector 18 street lights are off tonight, take the main road instead</div>
+            <div class="feed-meta">Neha S. · 22 min ago <span class="badge badge-warn">Caution</span></div>
+          </div>
+        </div>
+        <div class="feed-post">
+          <div class="feed-avatar" style="background:var(--success);color:var(--success-t)">RM</div>
+          <div class="feed-content">
+            <div class="feed-text">Khan Market to CP via Link Road is safe and well-patrolled tonight ✅</div>
+            <div class="feed-meta">Riya M. · 45 min ago <span class="badge badge-success">Safe</span></div>
+          </div>
+        </div>
+        <div class="feed-post">
+          <div class="feed-avatar" style="background:var(--danger);color:var(--danger-t)">AT</div>
+          <div class="feed-content">
+            <div class="feed-text">Suspicious vehicle seen circling near Dwarka Sec 12 market — noted the plate</div>
+            <div class="feed-meta">Ananya T. · 1 hr ago <span class="badge badge-danger">Danger</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SCREEN 10 — REPORT INCIDENT
+═══════════════════════════════════════════ -->
+<div class="screen" id="screen-report">
+  <div class="grid2">
+    <div class="card" id="report-form">
+      <div class="card-title"><div class="card-title-left"><div class="icon" style="background:#fee2e2">📋</div>Report an Incident</div></div>
+      <div class="form-group">
+        <label>Incident Type</label>
+        <div class="type-chips">
+          <span class="chip selected" onclick="selectChip(this)">Harassment</span>
+          <span class="chip" onclick="selectChip(this)">Stalking</span>
+          <span class="chip" onclick="selectChip(this)">Unsafe Area</span>
+          <span class="chip" onclick="selectChip(this)">Violence</span>
+          <span class="chip" onclick="selectChip(this)">Suspicious Activity</span>
+          <span class="chip" onclick="selectChip(this)">Other</span>
+        </div>
+      </div>
+      <div class="form-group"><label>Location</label><input type="text" id="rep-loc" placeholder="Area / landmark" value="Karol Bagh Metro Station"/></div>
+      <div class="form-group"><label>Date & Time</label><input type="text" id="rep-time" placeholder="When did it happen?" value="Today, ~8:30 PM"/></div>
+      <div class="form-group"><label>Description</label><textarea id="rep-desc" placeholder="Describe the incident in detail..."></textarea></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer">
+          <input type="checkbox" id="anon-check" checked>
+          <span style="font-size:12px;color:var(--text)">Submit anonymously</span>
+        </label>
+        <span class="badge badge-success">📍 GPS auto-attached</span>
+      </div>
+      <button class="btn btn-red btn-full" onclick="submitReport()">📤 Submit Report</button>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="card-title-left"><div class="icon" style="background:#dbeafe">📊</div>Report Statistics</div></div>
+      <div class="grid2" style="margin-bottom:12px">
+        <div class="stat-card red" style="padding:12px"><div class="stat-val" style="color:var(--red);font-size:20px">142</div><div class="stat-label">Reports this month</div></div>
+        <div class="stat-card green" style="padding:12px"><div class="stat-val" style="color:var(--green);font-size:20px">89%</div><div class="stat-label">Anonymous</div></div>
+      </div>
+      <div class="card-title" style="margin-bottom:10px;font-size:13px"><div class="card-title-left"><div class="icon" style="background:#fef3c7">🕐</div>Recent Reports</div></div>
+      <div style="font-size:12px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:500">Harassment · Karol Bagh</div><div style="color:var(--muted)">2 min ago</div></div><span class="badge badge-danger">High</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:500">Unsafe Area · Paharganj</div><div style="color:var(--muted)">17 min ago</div></div><span class="badge badge-warn">Medium</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:500">Suspicious Act. · Dwarka</div><div style="color:var(--muted)">43 min ago</div></div><span class="badge badge-warn">Medium</span></div>
+      </div>
+      <div id="report-success" style="display:none;text-align:center;padding:20px">
+        <div style="font-size:44px;margin-bottom:8px">✅</div>
+        <div style="font-size:16px;font-weight:700;color:var(--green);margin-bottom:6px">Report Submitted!</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Your report has been anonymously logged and will update the community heatmap.</div>
+        <div style="font-size:11px;font-weight:600;color:var(--muted)" id="rep-id-display"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SCRIPTS ──────────────────────────────── -->
+<script>
+// ── GLOBALS ────────────────────────────────────
+let userLat = 28.6139, userLng = 77.2090;
+let mainMap, heatMap, routeMap;
+let cameraStream = null, emoCameraStream = null;
+let userMarker, emoStream;
+let contacts = [
+  { name: "Mom",      phone: "+919876543210", initials: "MA", color: "av-red" },
+  { name: "Riya Singh", phone: "+919123456789", initials: "RS", color: "av-blue" },
+  { name: "Priya K.", phone: "+919000011223",  initials: "PK", color: "av-teal" }
+];
+
+// ── TAB SWITCHING ──────────────────────────────
+function switchTab(id, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  else {
+    document.querySelectorAll('.nav-tab').forEach(t => {
+      if (t.textContent.toLowerCase().includes('sos')) t.classList.add('active');
+    });
+  }
+  // Init maps lazily
+  if (id === 'map'      && !mainMap)  initMainMap();
+  if (id === 'heatmap'  && !heatMap)  initHeatmap();
+  if (id === 'route'    && !routeMap) initRouteMap();
+  if (id === 'dashboard') buildBarChart('dashBarChart');
+  if (id === 'analytics') buildBarChart('analyticsBarChart');
+  if (id === 'sos') updateSMSPreview();
+}
+
+// ── TOAST ──────────────────────────────────────
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => t.className = '', 3000);
+}
+
+// ── MODAL ──────────────────────────────────────
+function openModal(text) {
+  document.getElementById('sosModalText').innerHTML = text;
+  document.getElementById('sosModal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('sosModal').classList.remove('open');
+}
+
+// ── GEOLOCATION ────────────────────────────────
+function getLocation(cb) {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos => {
+    userLat = pos.coords.latitude;
+    userLng = pos.coords.longitude;
+    const txt = userLat.toFixed(5) + '°N, ' + userLng.toFixed(5) + '°E';
+    const el = document.getElementById('map-coords');
+    if (el) el.innerHTML = '📍 ' + txt + '<br><span style="color:var(--muted);font-family:normal;font-size:11px">Accuracy: ±' + Math.round(pos.coords.accuracy) + 'm</span>';
+    document.getElementById('dash-location').textContent = '📍 Live GPS: ' + txt;
+    updateSMSPreview();
+    if (userMarker) userMarker.setLatLng([userLat, userLng]);
+    if (cb) cb();
+  }, () => {
+    document.getElementById('map-coords').textContent = '⚠️ Location access denied. Using default.';
+  });
+}
+
+function updateSMSPreview() {
+  const now = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) + ' IST';
+  const maps = 'maps.google.com/?q=' + userLat.toFixed(5) + ',' + userLng.toFixed(5);
+  document.getElementById('smsPreview').innerHTML =
+    '🚨 EMERGENCY ALERT<br>' +
+    'User needs immediate help!<br>' +
+    '📍 Location: ' + userLat.toFixed(5) + '°N, ' + userLng.toFixed(5) + '°E<br>' +
+    '🗺 Maps: ' + maps + '<br>' +
+    '⏰ Time: ' + now;
+}
+
+// ── MAPS ───────────────────────────────────────
+function initMainMap() {
+  mainMap = L.map('map').setView([userLat, userLng], 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(mainMap);
+  userMarker = L.circleMarker([userLat, userLng], {
+    radius: 10, color: '#c0392b', fillColor: '#c0392b', fillOpacity: 1
+  }).addTo(mainMap).bindPopup('📍 You are here').openPopup();
+  // Danger zones
+  const zones = [
+    { lat: 28.6519, lng: 77.1909, name: 'Karol Bagh', color: 'red',    level: 'High Risk' },
+    { lat: 28.6448, lng: 77.2167, name: 'Paharganj',  color: 'orange', level: 'Moderate' },
+    { lat: 28.6273, lng: 77.2190, name: 'Khan Market',color: 'green',  level: 'Safe Zone' }
+  ];
+  zones.forEach(z => {
+    L.circle([z.lat, z.lng], {
+      radius: 400, color: z.color, fillColor: z.color, fillOpacity: 0.2
+    }).addTo(mainMap).bindPopup('<b>' + z.name + '</b><br>' + z.level);
+  });
+}
+
+function initHeatmap() {
+  heatMap = L.map('heatmap').setView([userLat, userLng], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(heatMap);
+  const hotspots = [
+    [28.6519, 77.1909, 0.9, 'Karol Bagh', 'High'],
+    [28.6448, 77.2167, 0.7, 'Paharganj',  'Moderate'],
+    [28.5672, 77.0703, 0.5, 'Dwarka Sec 12', 'Moderate'],
+    [28.5665, 77.2431, 0.4, 'Lajpat Nagar',  'Low'],
+    [28.7041, 77.1025, 0.3, 'Rohini',         'Low'],
+  ];
+  hotspots.forEach(h => {
+    const col = h[1] > 0.7 ? 'red' : h[1] > 0.4 ? 'orange' : 'green';
+    L.circle([h[0], h[1]], {
+      radius: 600, color: col, fillColor: col, fillOpacity: 0.35
+    }).addTo(heatMap).bindPopup('<b>' + h[3] + '</b><br>Risk: ' + h[4]);
+  });
+}
+
+function initRouteMap() {
+  routeMap = L.map('routemap').setView([28.6319, 77.2100], 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(routeMap);
+  L.marker([28.6519, 77.1909]).addTo(routeMap).bindPopup('📍 Karol Bagh Metro');
+  L.marker([28.6315, 77.2167]).addTo(routeMap).bindPopup('🏁 Connaught Place');
+}
+
+function planRoute() {
+  document.getElementById('route-results').style.display = 'block';
+  if (routeMap) {
+    routeMap.setView([28.6400, 77.2050], 14);
+    L.polyline([[28.6519,77.1909],[28.6450,77.2000],[28.6315,77.2167]], {
+      color: '#27ae60', weight: 5, opacity: .8
+    }).addTo(routeMap).bindPopup('✅ Safe route via Janpath');
+    L.polyline([[28.6519,77.1909],[28.6480,77.2100],[28.6315,77.2167]], {
+      color: '#e67e22', weight: 4, opacity: .6, dashArray: '8,6'
+    }).addTo(routeMap).bindPopup('⚠️ Alternate via Panchkuian');
+  }
+  showToast('2 routes found — green is safest!', 'success');
+}
+
+// ── BAR CHART ──────────────────────────────────
+function buildBarChart(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el || el.children.length) return;
+  const data = [1,0,1,0,0,1,2,4,6,8,5,4,6,9,5,4,7,12,14,10,8,6,4,2];
+  const max  = Math.max(...data);
+  data.forEach((v, i) => {
+    const w = document.createElement('div');
+    w.className = 'bar-wrap';
+    const b = document.createElement('div');
+    b.className = 'bar';
+    b.style.height = Math.max(3, Math.round(v / max * 140)) + 'px';
+    b.style.background = v >= 12 ? 'var(--red)' : v >= 7 ? 'var(--amber)' : 'var(--teal)';
+    b.title = v + ' incidents at ' + (i < 12 ? i + 'am' : (i-12) + 'pm');
+    if (i % 6 === 0) {
+      const l = document.createElement('div');
+      l.className = 'bar-lbl';
+      l.textContent = i === 0 ? '12a' : i < 12 ? i+'a' : i === 12 ? '12p' : (i-12)+'p';
+      w.appendChild(b); w.appendChild(l);
+    } else w.appendChild(b);
+    el.appendChild(w);
+  });
+}
+
+// ── CAMERA ─────────────────────────────────────
+async function startCamera() {
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    const v = document.getElementById('videoEl');
+    v.srcObject = cameraStream;
+    document.getElementById('camPlaceholder').style.display = 'none';
+    document.getElementById('camStatus').textContent = '🟢 Camera Live';
+    document.getElementById('camStatus').className = 'badge badge-success';
+    document.getElementById('startCamBtn').style.display = 'none';
+    document.getElementById('stopCamBtn').style.display = 'block';
+    document.getElementById('detectBtn').disabled = false;
+    showToast('Camera started!', 'success');
+  } catch (e) {
+    showToast('Camera access denied. Please allow camera permission.', 'error');
+  }
+}
+
+function stopCamera() {
+  if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+  cameraStream = null;
+  document.getElementById('videoEl').srcObject = null;
+  document.getElementById('camPlaceholder').style.display = 'flex';
+  document.getElementById('camStatus').textContent = 'Camera Off';
+  document.getElementById('camStatus').className = 'badge badge-muted';
+  document.getElementById('startCamBtn').style.display = 'block';
+  document.getElementById('stopCamBtn').style.display = 'none';
+  document.getElementById('detectBtn').disabled = true;
+}
+
+async function detectGender() {
+  if (!cameraStream) return;
+  const video  = document.getElementById('videoEl');
+  const canvas = document.getElementById('canvasEl');
+  canvas.width = video.videoWidth || 640;
+  canvas.height = video.videoHeight || 480;
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  const b64 = canvas.toDataURL('image/jpeg', 0.8);
+  document.getElementById('detBadge').textContent = '⏳ Detecting...';
+  document.getElementById('detBadge').className = 'badge badge-info';
+  document.getElementById('det-status-text').textContent = 'Sending frame to DeepFace AI...';
+  try {
+    const res = await fetch('/detect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: b64 })
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('det-people').textContent = data.total;
+      document.getElementById('det-male').textContent   = data.male_count;
+      document.getElementById('det-female').textContent = data.female_count;
+      const threat = data.threat_level;
+      document.getElementById('det-threat').textContent = threat;
+      document.getElementById('det-threat').style.color =
+        threat === 'High' ? 'var(--red)' : threat === 'Moderate' ? 'var(--amber)' : 'var(--green)';
+      if (data.people.length) {
+        document.getElementById('det-emotion').textContent = data.people[0].emotion || '—';
+        document.getElementById('det-age').textContent = data.people[0].age ? data.people[0].age + 'y' : '—';
+      }
+      let badgeClass = 'badge-success', badgeText = 'Safe';
+      if (threat === 'High')     { badgeClass = 'badge-danger'; badgeText = 'Danger!'; }
+      if (threat === 'Moderate') { badgeClass = 'badge-warn';   badgeText = 'Caution'; }
+      document.getElementById('detBadge').textContent = badgeText;
+      document.getElementById('detBadge').className   = 'badge ' + badgeClass;
+      document.getElementById('det-status-text').textContent =
+        data.total + ' person(s) detected. Threat: ' + threat + '. Time: ' + data.timestamp;
+      // People list
+      let html = '';
+      data.people.forEach((p, i) => {
+        html += '<div style="padding:6px 0;border-bottom:1px solid var(--border)">' +
+          '<b>Person ' + (i+1) + '</b>: ' + p.gender + ', ~' + p.age + 'y, ' + p.emotion +
+          ' (' + p.confidence + '% conf.)</div>';
+      });
+      document.getElementById('people-list').innerHTML = html || 'No people detected.';
+      if (threat === 'High') showToast('⚠️ HIGH THREAT detected! Consider triggering SOS.', 'error');
+    } else {
+      document.getElementById('det-status-text').textContent = 'Error: ' + data.error;
+      showToast('Detection failed: ' + data.error, 'error');
+    }
+  } catch (e) {
+    document.getElementById('det-status-text').textContent = '⚠️ Could not connect to backend. Is Flask running?';
+    showToast('Cannot reach backend. Make sure Flask app is running on port 5500.', 'error');
+  }
+}
+
+// ── EMOTION CAM ─────────────────────────────────
+async function startEmoCam() {
+  try {
+    emoCameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    document.getElementById('emVideoEl').srcObject = emoCameraStream;
+    document.getElementById('emCamPlaceholder').style.display = 'none';
+    document.getElementById('em-cam-status').textContent = '🟢 Live';
+    document.getElementById('em-cam-status').className = 'badge badge-success';
+    document.getElementById('emoDetectBtn').disabled = false;
+    showToast('Emotion camera ready!', 'success');
+  } catch (e) {
+    showToast('Camera access denied.', 'error');
+  }
+}
+function stopEmoCam() {
+  if (emoCameraStream) emoCameraStream.getTracks().forEach(t => t.stop());
+  emoCameraStream = null;
+  document.getElementById('emVideoEl').srcObject = null;
+  document.getElementById('emCamPlaceholder').style.display = 'flex';
+  document.getElementById('em-cam-status').textContent = 'Camera Off';
+  document.getElementById('em-cam-status').className = 'badge badge-muted';
+  document.getElementById('emoDetectBtn').disabled = true;
+}
+async function detectEmotion() {
+  if (!emoCameraStream) return;
+  const video = document.getElementById('emVideoEl');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth || 640; canvas.height = video.videoHeight || 480;
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  const b64 = canvas.toDataURL('image/jpeg', 0.8);
+  try {
+    const res  = await fetch('/detect', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ image: b64 }) });
+    const data = await res.json();
+    if (data.success && data.people.length) {
+      const p   = data.people[0];
+      const emo = p.emotion || 'neutral';
+      const faces = { fear:'😨', sad:'😢', angry:'😠', disgust:'🤢', happy:'😊', surprise:'😮', neutral:'😐' };
+      const colors = { fear:'var(--red)', sad:'#3498db', angry:'var(--red)', disgust:'var(--purple)', happy:'var(--green)', surprise:'var(--amber)', neutral:'var(--muted)' };
+      document.getElementById('emo-face').textContent = faces[emo.toLowerCase()] || '😐';
+      document.getElementById('emo-name').textContent = emo.charAt(0).toUpperCase() + emo.slice(1);
+      document.getElementById('emo-badge').textContent = p.confidence + '% confidence';
+      document.getElementById('emo-badge').className = 'badge badge-info';
+      // Set bars
+      const fearVal = Math.round((emo === 'fear' ? p.confidence : Math.random()*15));
+      const neutVal = Math.round(emo === 'neutral' ? p.confidence : Math.random()*30);
+      const distVal = Math.round((emo === 'sad'||emo==='angry') ? p.confidence*0.8 : Math.random()*10);
+      const hapVal  = Math.round(emo === 'happy' ? p.confidence : Math.random()*20);
+      const setBar = (bid,vid,v) => { document.getElementById(bid).style.width=v+'%'; document.getElementById(vid).textContent=v+'%'; };
+      setBar('b-fear','v-fear',fearVal); setBar('b-neut','v-neut',neutVal);
+      setBar('b-dist','v-dist',distVal); setBar('b-hap','v-hap',hapVal);
+      if (fearVal > 60 || distVal > 60) {
+        document.getElementById('emo-advice').innerHTML = '🚨 High fear/distress detected! <button class="btn btn-red" style="padding:4px 12px;font-size:11px;margin-left:8px" onclick="switchTab(\'sos\',null)">Trigger SOS →</button>';
+      } else {
+        document.getElementById('emo-advice').textContent = '✅ Emotion analysis complete. No distress detected.';
+      }
+    } else {
+      showToast('No face detected. Please face the camera.', 'error');
+    }
+  } catch (e) {
+    showToast('Backend not reachable. Flask must be running.', 'error');
+  }
+}
+
+// ── SOS ────────────────────────────────────────
+async function triggerSOS() {
+  const btn = document.querySelector('.sos-btn-big');
+  btn.style.background = '#7f1b0e';
+  btn.innerHTML = '<div class="sos-ring"></div><div class="sos-ring2"></div><div style="font-size:20px">⏳</div>Sending...';
+  try {
+    const res  = await fetch('/sos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lat: userLat, lng: userLng, name: 'User' })
+    });
+    const data = await res.json();
+    btn.style.background = 'var(--red)';
+    btn.innerHTML = '<div class="sos-ring"></div><div class="sos-ring2"></div><div class="sos-icon">🚨</div>SOS';
+    if (data.success) {
+      openModal('✅ SMS sent to your trusted contacts!<br><br>📍 Location shared: ' + userLat.toFixed(4) + '°N, ' + userLng.toFixed(4) + '°E<br>📨 Message ID: ' + data.message_sid);
+    } else {
+      openModal('⚠️ SMS failed: ' + data.error + '<br><br>Make sure Twilio credentials are set in app.py');
+    }
+  } catch (e) {
+    btn.style.background = 'var(--red)';
+    btn.innerHTML = '<div class="sos-ring"></div><div class="sos-ring2"></div><div class="sos-icon">🚨</div>SOS';
+    openModal('⚠️ Could not reach backend.<br>Make sure Flask is running on port 5500.<br><br>Command: <code>python app.py</code>');
+  }
+}
+
+// ── CONTACTS ───────────────────────────────────
+function addContact() {
+  const name  = document.getElementById('new-contact-name').value.trim();
+  const phone = document.getElementById('new-contact-phone').value.trim();
+  if (!name || !phone) return showToast('Please enter both name and phone number.', 'error');
+  contacts.push({ name, phone, initials: name.slice(0,2).toUpperCase(), color: 'av-teal' });
+  const div = document.createElement('div');
+  div.className = 'contact-card';
+  div.innerHTML = '<div class="avatar av-teal">' + name.slice(0,2).toUpperCase() + '</div>' +
+    '<div style="flex:1"><div style="font-size:13px;font-weight:600">' + name + '</div>' +
+    '<div style="font-size:12px;color:var(--muted)">' + phone + '</div></div>' +
+    '<span class="badge badge-success">Active</span>';
+  document.getElementById('contacts-list').insertBefore(div, document.querySelector('#contacts-list hr') || null);
+  document.getElementById('new-contact-name').value = '';
+  document.getElementById('new-contact-phone').value = '';
+  showToast(name + ' added to trusted contacts!', 'success');
+}
+
+// ── COMMUNITY ──────────────────────────────────
+function postToFeed() {
+  const text = document.getElementById('post-text').value.trim();
+  if (!text) return showToast('Please write something first.', 'error');
+  const tag  = document.getElementById('post-tag').value;
+  const loc  = document.getElementById('post-loc').value.trim();
+  const tagColors = { Danger:'badge-danger', Caution:'badge-warn', Safe:'badge-success', Tip:'badge-info' };
+  const div = document.createElement('div');
+  div.className = 'feed-post';
+  div.innerHTML =
+    '<div class="feed-avatar" style="background:var(--info);color:var(--info-t)">YJ</div>' +
+    '<div class="feed-content">' +
+      '<div class="feed-text">' + text + (loc ? ' 📍 ' + loc : '') + '</div>' +
+      '<div class="feed-meta">You · just now <span class="badge ' + tagColors[tag] + '">' + tag + '</span></div>' +
+    '</div>';
+  const feed = document.getElementById('community-feed');
+  feed.insertBefore(div, feed.firstChild);
+  document.getElementById('post-text').value = '';
+  document.getElementById('post-loc').value  = '';
+  showToast('Posted to community feed!', 'success');
+}
+
+// ── REPORT ─────────────────────────────────────
+function selectChip(el) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+async function submitReport() {
+  const type = document.querySelector('.chip.selected')?.textContent || 'Other';
+  const loc  = document.getElementById('rep-loc').value.trim();
+  const desc = document.getElementById('rep-desc').value.trim();
+  if (!desc) return showToast('Please describe the incident.', 'error');
+  try {
+    const res  = await fetch('/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, location: loc, description: desc, lat: userLat, lng: userLng, anonymous: document.getElementById('anon-check').checked })
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('report-success').style.display = 'block';
+      document.getElementById('rep-id-display').textContent = 'Report ID: ' + data.report_id;
+      document.getElementById('rep-desc').value = '';
+      showToast('Report submitted: ' + data.report_id, 'success');
+    }
+  } catch (e) {
+    // Simulate offline success for demo
+    const rid = 'RPT' + Date.now();
+    document.getElementById('report-success').style.display = 'block';
+    document.getElementById('rep-id-display').textContent = 'Report ID: ' + rid + ' (offline)';
+    showToast('Report logged: ' + rid, 'success');
+  }
+}
+
+// ── LIVE BLINK ─────────────────────────────────
+let blink = true;
+setInterval(() => {
+  const d = document.getElementById('live-dot');
+  if (d) d.style.color = blink ? 'var(--red)' : 'var(--muted)';
+  blink = !blink;
+}, 800);
+
+// ── CLOCK ──────────────────────────────────────
+function updateClock() {
+  const el = document.getElementById('dash-time');
+  if (el) el.textContent = new Date().toLocaleString('en-IN', { weekday:'short', hour:'2-digit', minute:'2-digit' });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── LIVE INCIDENT COUNTER ──────────────────────
+let incCount = 24;
+setInterval(() => {
+  if (Math.random() > .7) {
+    incCount++;
+    const el = document.getElementById('d-incidents');
+    if (el) el.textContent = incCount;
+  }
+}, 7000);
+
+// ── INIT ───────────────────────────────────────
+window.onload = () => {
+  getLocation();
+  buildBarChart('dashBarChart');
+  updateSMSPreview();
+};
+</script>
+</body>
+</html>
